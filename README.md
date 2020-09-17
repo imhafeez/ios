@@ -1,4 +1,4 @@
-# iProov iOS SDK v7.5.0
+# iProov iOS SDK v7.6.0-beta3
 
 ## 📖 Table of contents
 
@@ -23,7 +23,7 @@ The iProov iOS SDK enables you to integrate iProov into your iOS app. We also ha
 - iOS 9.0 and above
 - Xcode 11.0 and above
 
-The framework has been written in Swift 5.2.4, and we recommend use of Swift for the simplest and cleanest integration, however it is also possible to call iProov from within an Objective-C app using our [Objective-C API](https://github.com/iProov/ios/wiki/Objective-C-Support), which provides an Objective-C friendly API to invoke the Swift code.
+The framework has been written in Swift 5.2, and we recommend use of Swift for the simplest and cleanest integration, however it is also possible to call iProov from within an Objective-C app using our [Objective-C API](https://github.com/iProov/ios/wiki/Objective-C-Support), which provides an Objective-C friendly API to invoke the Swift code.
 
 ### Dependencies
 
@@ -37,7 +37,7 @@ The SDK also utilises a [forked version](https://github.com/iproovopensource/GPU
 
 ### Module Stability
 
-As of iProov SDK 7.2.0, module stability is supported for Swift 5.1 and above. The advantage of this is that the iProov SDK no longer needs to be recompiled for every new version of the Swift compiler.
+As of iProov SDK v7.2, module stability is supported for Swift 5.1 and above. The advantage of this is that the iProov SDK no longer needs to be recompiled for every new version of the Swift compiler.
 
 iProov is built with the _"Build Libraries for Distribution"_ build setting enabled, which means that its dependencies must also be built in the same fashion. However, this is still not fully supported in either Cocoapods nor Carthage as of April 2020, therefore some workarounds are required (see installation documentation for details).
 
@@ -62,11 +62,17 @@ You can obtain API credentials by registering on the [iProov Portal](https://por
 
 ## 📲 Installation
 
-Integration with your app is supported via both Cocoapods and Carthage. We recommend Cocoapods for the easiest installation.
+Integration with your app is supported via Swift Package Manager, Cocoapods and Carthage. We recommend either Swift Package Manager or Cocoapods for the easiest installation.
+
+### Swift Package Manager
+
+iProov SDK v8 supports Swift Package Manager in Xcode 12 and above. Users of earlier versions of Xcode should continue to use either Cocoapods or Carthage.
+
+
 
 ### Cocoapods
 
-As of iProov SDK 7.4.0 the framework is now distributed as an XCFramework, **you are therefore required to use Cocoapods 1.9.0 or newer**.
+As of iProov SDK v7.4 the framework is now distributed as an XCFramework, **you are therefore required to use Cocoapods 1.9.0 or newer**.
 
 1. If you are not yet using Cocoapods in your project, first run `sudo gem install cocoapods` followed by `pod init`. (For further information on installing Cocoapods, [click here](https://guides.cocoapods.org/using/getting-started.html#installation).)
 
@@ -90,7 +96,7 @@ As of iProov SDK 7.4.0 the framework is now distributed as an XCFramework, **you
 	end
 	```
 	
-	> 🧰 **MODULE STABILITY WORKAROUND:** You must add this code, because whilst iProov (since 7.2.0) supports module stability, it is not directly supported in Cocoapods. This code will manually enable module stability for all of iProov's dependencies. [This is due to be fixed in Cocoapods 1.10.0](https://github.com/CocoaPods/CocoaPods/pull/9693).
+	> 🧰 **MODULE STABILITY WORKAROUND:** You must add this code, because whilst iProov (since v7.2) supports module stability, it is not directly supported in Cocoapods. This code will manually enable module stability for all of iProov's dependencies. [This is due to be fixed in Cocoapods 1.10.0](https://github.com/CocoaPods/CocoaPods/pull/9693).
 
 4. Run `pod install`.
 
@@ -118,7 +124,7 @@ At the time of writing, Carthage still does not properly support XCFrameworks, t
 	echo 'BUILD_LIBRARY_FOR_DISTRIBUTION=YES'>/tmp/iproov.xcconfig; XCODE_XCCONFIG_FILE=/tmp/iproov.xcconfig carthage build; rm /tmp/iproov.xcconfig
 	```
 
-	> 🧰 **MODULE STABILITY WORKAROUND:** iProov 7.2.0 supports module stability and therefore all its dependencies must be built in with the "Build Libraries for Distribution" setting enabled, however this is not currently supported in Carthage. Running this custom build command will ensure Xcode builds the dependencies with the correct settings. Once Carthage supports module stability, this workaround can be removed. Progress on this feature can be tracked [here](https://github.com/Carthage/Carthage/pull/2881).
+	> 🧰 **MODULE STABILITY WORKAROUND:** iProov v7.2 supports module stability and therefore all its dependencies must be built in with the "Build Libraries for Distribution" setting enabled, however this is not currently supported in Carthage. Running this custom build command will ensure Xcode builds the dependencies with the correct settings. Once Carthage supports module stability, this workaround can be removed. Progress on this feature can be tracked [here](https://github.com/Carthage/Carthage/pull/2881).
 
 3. Add an `NSCameraUsageDescription` entry to your app's Info.plist, with the reason why your app requires camera access (e.g. "To iProov you in order to verify your identity.")
 
@@ -139,9 +145,18 @@ let token = "{{ your token here }}"
 IProov.launch(token: token, callback: { (status) in
 
 	switch status {
+	case .connecting:
+		// The SDK is connecting to the server. You should provide an indeterminate progress indicator
+		// to let the user know that the connection is taking place.
+		
+	case .connected:
+		// The SDK has connected, and the iProov user interface will now be displayed. You should hide
+		// any progress indication at this point.
+	
 	case let .processing(progress, message):
-		// The SDK will update your app with the progress of streaming to the server and authenticating
-		// the user. This will be called multiple time as the progress updates.
+		// The scan has completed, and the SDK will update your app with the progress of streaming
+		// to the server and authenticating the user.
+		// This will be called multiple times as the progress updates.
 	    
 	case let .success(token):
 		// The user was successfully verified/enrolled and the token has been validated.
@@ -160,6 +175,10 @@ IProov.launch(token: token, callback: { (status) in
 		// The user was not successfully verified/enrolled due to an error (e.g. lost internet connection)
 		// along with an `iProovError` with more information about the error (NSError in Objective-C).
 		// It will be called once, or never.
+		
+	@unknown default:
+		// Reserved for future usage.
+		break
 		
 	}
 	
